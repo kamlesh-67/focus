@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { createClient } from '@/lib/supabase/server';
 
 const TaskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -13,10 +14,19 @@ const TaskSchema = z.object({
   projectId: z.string().optional().nullable(),
 });
 
+async function getUserId() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized');
+  return user.id;
+}
+
 export async function createTask(data: z.infer<typeof TaskSchema>) {
+  const userId = await getUserId();
   const task = await prisma.task.create({
     data: {
       ...data,
+      userId,
       completed: false,
     },
   });
@@ -26,8 +36,9 @@ export async function createTask(data: z.infer<typeof TaskSchema>) {
 }
 
 export async function toggleTask(id: string, completed: boolean) {
+  const userId = await getUserId();
   const task = await prisma.task.update({
-    where: { id },
+    where: { id, userId },
     data: { completed },
   });
   revalidatePath('/');
@@ -36,16 +47,23 @@ export async function toggleTask(id: string, completed: boolean) {
 }
 
 export async function deleteTask(id: string) {
+  const userId = await getUserId();
   await prisma.task.delete({
-    where: { id },
+    where: { id, userId },
   });
   revalidatePath('/');
   revalidatePath('/calendar');
 }
 
 export async function getTasks() {
-  return await prisma.task.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { project: true },
-  });
+  try {
+    const userId = await getUserId();
+    return await prisma.task.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      include: { project: true },
+    });
+  } catch {
+    return [];
+  }
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   CheckSquare, 
   Calendar, 
@@ -9,11 +9,15 @@ import {
   StickyNote, 
   Settings, 
   Sun, 
-  Moon 
+  Moon,
+  LogOut,
+  User
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { toast } from 'sonner';
 
 const navItems = [
   { icon: CheckSquare, label: 'Tasks', href: '/' },
@@ -25,10 +29,27 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const supabase = createClient();
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    getUser();
+  }, [supabase.auth]);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast.success('Signed out');
+    router.push('/login');
+    router.refresh();
+  };
 
   return (
     <aside className="hidden md:flex flex-col w-64 border-r border-border/30 h-screen sticky top-0 bg-card/50 backdrop-blur-xl">
@@ -57,13 +78,34 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="p-6 border-t border-border/30">
+      <div className="p-4 mt-auto border-t border-border/30 space-y-2">
+        {user && (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-accent/20">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <User size={16} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold truncate">{user.email}</p>
+            </div>
+          </div>
+        )}
+        
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          className="flex items-center justify-between gap-3 px-4 py-3 w-full rounded-xl bg-accent/30 text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
+          className="flex items-center justify-between gap-3 px-4 py-3 w-full rounded-xl hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-all"
         >
-          <span className="font-semibold text-sm">Appearance</span>
-          {mounted && (theme === 'dark' ? <Sun size={18} className="text-yellow-400" /> : <Moon size={18} className="text-blue-600" />)}
+          <div className="flex items-center gap-3">
+            {mounted && (theme === 'dark' ? <Sun size={18} className="text-yellow-400" /> : <Moon size={18} className="text-blue-600" />)}
+            <span className="font-semibold text-sm">Theme</span>
+          </div>
+        </button>
+
+        <button
+          onClick={handleSignOut}
+          className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-destructive hover:bg-destructive/10 transition-all font-semibold text-sm"
+        >
+          <LogOut size={18} />
+          <span>Sign Out</span>
         </button>
       </div>
     </aside>
