@@ -1,22 +1,32 @@
 'use server';
 
-import { prisma } from '@/lib/prisma';
+import sql from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 
 export async function addComment(taskId: string, content: string) {
-  const comment = await prisma.comment.create({
-    data: {
-      taskId,
-      content,
-    },
-  });
+  const id = `comm_${Math.random().toString(36).substr(2, 9)}`;
+
+  await sql`
+    INSERT INTO "Comment" (
+      "id", "taskId", "content"
+    ) VALUES (
+      ${id}, ${taskId}, ${content}
+    )
+  `;
+  
   revalidatePath('/');
-  return comment;
+  return { id, taskId, content, createdAt: new Date() };
 }
 
 export async function getComments(taskId: string) {
-  return await prisma.comment.findMany({
-    where: { taskId },
-    orderBy: { createdAt: 'asc' },
-  });
+  try {
+    return await sql`
+      SELECT * FROM "Comment"
+      WHERE "taskId" = ${taskId}
+      ORDER BY "createdAt" ASC
+    `;
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    return [];
+  }
 }

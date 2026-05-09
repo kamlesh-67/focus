@@ -1,6 +1,6 @@
 'use server';
 
-import { prisma } from '@/lib/prisma';
+import sql from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 
@@ -13,39 +13,49 @@ async function getUserId() {
 
 export async function createNote(content: string, color?: string) {
   const userId = await getUserId();
-  const note = await prisma.stickyNote.create({
-    data: { content, color, userId },
-  });
+  const id = `note_${Math.random().toString(36).substr(2, 9)}`;
+
+  await sql`
+    INSERT INTO "StickyNote" (
+      "id", "content", "color", "userId", "updatedAt"
+    ) VALUES (
+      ${id}, ${content}, ${color || null}, ${userId}, NOW()
+    )
+  `;
+  
   revalidatePath('/notes');
-  return note;
+  return { id, content, color };
 }
 
 export async function getNotes() {
   try {
     const userId = await getUserId();
-    return await prisma.stickyNote.findMany({
-      where: { userId },
-      orderBy: { updatedAt: 'desc' },
-    });
-  } catch {
+    return await sql`
+      SELECT * FROM "StickyNote"
+      WHERE "userId" = ${userId}
+      ORDER BY "updatedAt" DESC
+    `;
+  } catch (error) {
+    console.error('Error fetching notes:', error);
     return [];
   }
 }
 
 export async function updateNote(id: string, content: string) {
   const userId = await getUserId();
-  const note = await prisma.stickyNote.update({
-    where: { id, userId },
-    data: { content },
-  });
+  await sql`
+    UPDATE "StickyNote"
+    SET "content" = ${content}, "updatedAt" = NOW()
+    WHERE "id" = ${id} AND "userId" = ${userId}
+  `;
   revalidatePath('/notes');
-  return note;
 }
 
 export async function deleteNote(id: string) {
   const userId = await getUserId();
-  await prisma.stickyNote.delete({
-    where: { id, userId },
-  });
+  await sql`
+    DELETE FROM "StickyNote"
+    WHERE "id" = ${id} AND "userId" = ${userId}
+  `;
   revalidatePath('/notes');
 }

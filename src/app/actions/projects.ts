@@ -1,7 +1,6 @@
 'use server';
 
-import { prisma } from '@/lib/prisma';
-import { Project, Task } from '@prisma/client';
+import sql from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
@@ -21,39 +20,62 @@ async function getUserId() {
 
 export async function createProject(data: z.infer<typeof ProjectSchema>) {
   const userId = await getUserId();
-  const project = await prisma.project.create({
-    data: { ...data, userId },
-  });
+  const id = `proj_${Math.random().toString(36).substr(2, 9)}`;
+
+  await sql`
+    INSERT INTO "Project" (
+      "id", "title", "description", "targetDate", "progress", "userId", "updatedAt"
+    ) VALUES (
+      ${id}, ${data.title}, ${data.description || null}, ${data.targetDate || null}, 
+      0, ${userId}, NOW()
+    )
+  `;
+  
   revalidatePath('/goals');
-  return project;
+  return { id };
 }
 
 export async function getProjects() {
   try {
     const userId = await getUserId();
-    const projects = await prisma.project.findMany({
-      where: { userId },
-      include: {
-        tasks: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    
+    // Get projects
+    const projects = await sql`
+      SELECT * FROM "Project"
+      WHERE "userId" = ${userId}
+      ORDER BY "createdAt" DESC
+    `;
 
-    return projects.map((p: Project & { tasks: Task[] }) => {
-      const completedTasks = p.tasks.filter((t) => t.completed).length;
-      const totalTasks = p.tasks.length;
+    // Get tasks counts for each project
+    const projectsWithProgress = await Promise.all(projects.map(async (p) => {
+      const tasks = await sql`
+        SELECT completed FROM "Task"
+        WHERE "projectId" = ${p.id}
+      `;
+      
+      const totalTasks = tasks.length;
+      const completedTasks = tasks.filter(t => t.completed).length;
       const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-      return { ...p, progress };
-    });
-  } catch {
+      
+      return { 
+        ...p, 
+        progress,
+        tasks: tasks // Just needs to be an array for length check in component
+      };
+    }));
+
+    return projectsWithProgress;
+  } catch (error) {
+    console.error('Error fetching projects:', error);
     return [];
   }
 }
 
 export async function deleteProject(id: string) {
   const userId = await getUserId();
-  await prisma.project.delete({
-    where: { id, userId },
-  });
+  await sql`
+    DELETE FROM "Project"
+    WHERE "id" = ${id} AND "userId" = ${userId}
+  `;
   revalidatePath('/goals');
 }
