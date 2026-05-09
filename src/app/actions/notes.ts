@@ -1,6 +1,6 @@
 'use server';
 
-import sql from '@/lib/db';
+import sql from '@/lib/database';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { StickyNote } from '@prisma/client';
