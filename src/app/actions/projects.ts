@@ -1,9 +1,9 @@
 'use server';
 
-import sql from '@/lib/database';
+import sql from '../../lib/database';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '../../lib/supabase/server';
 import { Project } from '@prisma/client';
 
 const ProjectSchema = z.object({

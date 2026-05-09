@@ -1,6 +1,6 @@
 'use server';
 
-import sql from '@/lib/database';
+import sql from '../../lib/database';
 import { revalidatePath } from 'next/cache';
 import { Comment } from '@prisma/client';
 
