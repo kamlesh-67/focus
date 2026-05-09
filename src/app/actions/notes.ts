@@ -1,8 +1,9 @@
 'use server';
 
-import sql from '@/lib/db';
+import sql from '../../lib/db';
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '../../lib/supabase/server';
+import { StickyNote } from '@prisma/client';
 
 async function getUserId() {
   const supabase = await createClient();
@@ -15,26 +16,43 @@ export async function createNote(content: string, color?: string) {
   const userId = await getUserId();
   const id = `note_${Math.random().toString(36).substr(2, 9)}`;
 
-  await sql`
+  const [note] = await sql`
     INSERT INTO "StickyNote" (
       "id", "content", "color", "userId", "updatedAt"
     ) VALUES (
       ${id}, ${content}, ${color || null}, ${userId}, NOW()
     )
+    RETURNING *
   `;
   
   revalidatePath('/notes');
-  return { id, content, color };
+  return {
+    id: note.id,
+    content: note.content,
+    color: note.color,
+    userId: note.userId,
+    createdAt: note.createdAt,
+    updatedAt: note.updatedAt
+  };
 }
 
-export async function getNotes() {
+export async function getNotes(): Promise<StickyNote[]> {
   try {
     const userId = await getUserId();
-    return await sql`
+    const notes = await sql`
       SELECT * FROM "StickyNote"
       WHERE "userId" = ${userId}
       ORDER BY "updatedAt" DESC
     `;
+    
+    return notes.map((n: any) => ({
+      id: n.id,
+      content: n.content,
+      color: n.color,
+      userId: n.userId,
+      createdAt: n.createdAt,
+      updatedAt: n.updatedAt
+    }));
   } catch (error) {
     console.error('Error fetching notes:', error);
     return [];

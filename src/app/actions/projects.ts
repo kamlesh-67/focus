@@ -1,9 +1,10 @@
 'use server';
 
-import sql from '@/lib/db';
+import sql from '../../lib/db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '../../lib/supabase/server';
+import { Project } from '@prisma/client';
 
 const ProjectSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -35,32 +36,36 @@ export async function createProject(data: z.infer<typeof ProjectSchema>) {
   return { id };
 }
 
-export async function getProjects() {
+export async function getProjects(): Promise<(Project & { progress: number; tasks: any[] })[]> {
   try {
     const userId = await getUserId();
     
-    // Get projects
     const projects = await sql`
       SELECT * FROM "Project"
       WHERE "userId" = ${userId}
       ORDER BY "createdAt" DESC
     `;
 
-    // Get tasks counts for each project
-    const projectsWithProgress = await Promise.all(projects.map(async (p) => {
+    const projectsWithProgress = await Promise.all(projects.map(async (p: any) => {
       const tasks = await sql`
         SELECT completed FROM "Task"
         WHERE "projectId" = ${p.id}
       `;
       
       const totalTasks = tasks.length;
-      const completedTasks = tasks.filter(t => t.completed).length;
+      const completedTasks = tasks.filter((t: any) => t.completed).length;
       const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
       
       return { 
-        ...p, 
+        id: p.id,
+        title: p.title,
+        description: p.description,
+        targetDate: p.targetDate,
         progress,
-        tasks: tasks // Just needs to be an array for length check in component
+        userId: p.userId,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+        tasks: tasks
       };
     }));
 

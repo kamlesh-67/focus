@@ -1,10 +1,10 @@
 'use server';
 
-import sql from '@/lib/db';
+import sql from '../../lib/db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
-import { v4 as uuidv4 } from 'uuid';
+import { createClient } from '../../lib/supabase/server';
+import { Task } from '@prisma/client';
 
 const TaskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -24,7 +24,7 @@ async function getUserId() {
 
 export async function createTask(data: z.infer<typeof TaskSchema>) {
   const userId = await getUserId();
-  const id = `task_${Math.random().toString(36).substr(2, 9)}`; // simple cuid replacement
+  const id = `task_${Math.random().toString(36).substr(2, 9)}`; 
   
   await sql`
     INSERT INTO "Task" (
@@ -61,21 +61,30 @@ export async function deleteTask(id: string) {
   revalidatePath('/calendar');
 }
 
-export async function getTasks() {
+export async function getTasks(): Promise<(Task & { project: { title: string } | null })[]> {
   try {
     const userId = await getUserId();
     const tasks = await sql`
-      SELECT t.*, p.title as "projectTitle"
+      SELECT t.*, p.title as "project_title"
       FROM "Task" t
       LEFT JOIN "Project" p ON t."projectId" = p.id
       WHERE t."userId" = ${userId}
       ORDER BY t."createdAt" DESC
     `;
-    
-    // Format for frontend (Project relation)
-    return tasks.map(t => ({
-      ...t,
-      project: t.projectTitle ? { title: t.projectTitle } : null
+
+    return tasks.map((t: any) => ({
+      id: t.id,
+      title: t.title,
+      description: t.description,
+      dueDate: t.dueDate,
+      priority: t.priority,
+      category: t.category,
+      completed: t.completed,
+      createdAt: t.createdAt,
+      updatedAt: t.updatedAt,
+      userId: t.userId,
+      projectId: t.projectId,
+      project: t.project_title ? { title: t.project_title } : null
     }));
   } catch (error) {
     console.error('Error fetching tasks:', error);
