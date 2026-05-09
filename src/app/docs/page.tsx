@@ -2,34 +2,35 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Search, Book, HelpCircle, Rocket, Zap, ChevronRight, CheckSquare } from 'lucide-react';
+import { Search, Book, HelpCircle, Rocket, Zap, ChevronRight, CheckSquare, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 const docsContent = [
   {
     category: "Getting Started",
     icon: Rocket,
     articles: [
-      { title: "Introduction to Focus", slug: "intro", content: "Focus is a heavyweight minimalist productivity tool designed for high-performance individuals. It combines tasks, goals, and notes in one unified workspace." },
-      { title: "Installation Guide (PWA)", slug: "install", content: "To install Focus as a PWA, click the 'Install' icon in your browser address bar. This allows you to use Focus offline and as a standalone desktop or mobile app." },
-      { title: "Creating Your First Task", slug: "first-task", content: "Click the '+' button in the bottom right or on any calendar day to create a task. Add a title, priority, and optional due date." },
+      { title: "Introduction to Focus", slug: "intro", content: "Focus is a professional-grade minimalist productivity tool. It combines tasks, goals, and notes in one unified workspace, designed for high-performance individuals who demand clarity." },
+      { title: "Installation Guide (PWA)", slug: "install", content: "Focus is a Progressive Web App. To install, click the 'Install' icon in your browser's address bar. This enables offline access and a native desktop/mobile experience." },
+      { title: "Creating Your First Task", slug: "first-task", content: "Use the global '+' button or the Command Palette (Ctrl+K) to create tasks. Use smart parsing (e.g., '#work !high tomorrow') for rapid entry." },
     ]
   },
   {
-    category: "Advanced Features",
+    category: "Mastering Productivity",
     icon: Zap,
     articles: [
-      { title: "Managing Goals & Projects", slug: "goals", content: "Goals allow you to group multiple tasks. Progress is automatically calculated based on task completion within the project." },
-      { title: "Using the Calendar", slug: "calendar", content: "The calendar provides a high-level view of your schedule. You can click on any date to quickly add tasks or projects for that specific day." },
-      { title: "Capturing Ideas with Notes", slug: "notes", content: "Sticky notes are perfect for unstructured thoughts. They are color-coded and synced instantly across all your devices." },
+      { title: "Zen Focus Mode", slug: "zen", content: "Enter an immersive, distraction-free environment for deep work. Zen mode features a breathing-guided timer and a focused task view." },
+      { title: "The Command Palette", slug: "command-palette", content: "Press Ctrl+K (or Cmd+K) to open the Command Palette. Search everything and navigate the app instantly without leaving your keyboard." },
+      { title: "Goal Tracking", slug: "goals", content: "Break down long-term visions into actionable goals. Focus automatically calculates progress based on linked task completion." },
     ]
   },
   {
-    category: "Security & Account",
+    category: "Technical & Security",
     icon: Book,
     articles: [
-      { title: "Row Level Security (RLS)", slug: "rls", content: "Your data is protected by Supabase RLS. Only you can see and modify your tasks, goals, and notes." },
-      { title: "Account Management", slug: "account", content: "You can manage your theme preferences and account settings in the 'Settings' tab. Sign out safely to protect your data on shared devices." },
+      { title: "Supabase & Data Security", slug: "security", content: "Your data is secured by Supabase with Row Level Security (RLS). Every operation is authenticated and isolated to your specific user ID." },
+      { title: "Native Notifications", slug: "notifications", content: "Enable desktop notifications in Settings to receive real-time alerts for upcoming deadlines and session completions." },
     ]
   }
 ];
@@ -47,58 +48,69 @@ export default function DocsPage() {
   })).filter(cat => cat.articles.length > 0);
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b-2 border-border/40 bg-card/50 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white">
-                <CheckSquare size={18} strokeWidth={3} />
-              </div>
-              <span className="text-xl font-black tracking-tighter">Focus Docs</span>
+    <div className="flex flex-col min-h-screen bg-background mesh-gradient">
+      {/* Professional Header */}
+      <header className="border-b-2 border-border/40 bg-card/50 backdrop-blur-2xl sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <Link href="/dashboard" className="p-3 bg-accent/50 hover:bg-accent rounded-2xl transition-all active:scale-90">
+              <ArrowLeft size={20} strokeWidth={3} />
             </Link>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                <CheckSquare size={24} strokeWidth={3} />
+              </div>
+              <div>
+                <span className="text-2xl font-black tracking-tighter block leading-none">Focus Docs</span>
+                <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Version 1.0.0</span>
+              </div>
+            </div>
           </div>
           
-          <div className="relative w-full max-w-md hidden md:block">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+          <div className="relative w-full max-w-lg hidden md:block">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
             <input 
               type="text"
-              placeholder="Search documentation..."
+              placeholder="Search features, shortcuts, and guides..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-2.5 rounded-xl border border-border/40 bg-background focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-bold"
+              className="w-full pl-14 pr-6 py-4 rounded-2xl border-2 border-border/40 bg-background focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-bold shadow-sm"
             />
           </div>
 
-          <Link href="/" className="text-sm font-black uppercase tracking-widest text-primary hover:underline">
-            Back to App
+          <Link href="/dashboard" className="px-6 py-3 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all">
+            Open App
           </Link>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 flex-1 flex flex-col md:flex-row gap-12 py-12">
-        {/* Sidebar Navigation */}
-        <aside className="w-full md:w-72 space-y-10">
+      <div className="max-w-7xl mx-auto px-6 flex-1 flex flex-col md:flex-row gap-16 py-16">
+        {/* Navigation Sidebar */}
+        <aside className="w-full md:w-80 space-y-12">
           {filteredDocs.map((cat) => (
             <div key={cat.category}>
-              <div className="flex items-center gap-2 mb-4 text-muted-foreground">
-                <cat.icon size={16} />
-                <h3 className="text-xs font-black uppercase tracking-[0.2em]">{cat.category}</h3>
+              <div className="flex items-center gap-3 mb-6 text-muted-foreground">
+                <div className="p-2 bg-accent/50 rounded-lg">
+                  <cat.icon size={16} strokeWidth={2.5} />
+                </div>
+                <h3 className="text-xs font-black uppercase tracking-[0.3em]">{cat.category}</h3>
               </div>
-              <ul className="space-y-1">
+              <ul className="space-y-2">
                 {cat.articles.map((art) => (
                   <li key={art.slug}>
                     <button
                       onClick={() => setActiveArticle(art)}
                       className={cn(
-                        "w-full text-left px-4 py-2.5 rounded-xl text-sm font-bold transition-all",
+                        "w-full text-left px-5 py-4 rounded-2xl text-sm font-black tracking-tight transition-all group",
                         activeArticle.slug === art.slug 
-                          ? "bg-primary text-white shadow-lg shadow-primary/20" 
-                          : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                          ? "bg-primary text-white shadow-xl shadow-primary/30 scale-[1.02]" 
+                          : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                       )}
                     >
-                      {art.title}
+                      <div className="flex items-center justify-between">
+                        <span>{art.title}</span>
+                        {activeArticle.slug === art.slug && <ChevronRight size={16} strokeWidth={3} />}
+                      </div>
                     </button>
                   </li>
                 ))}
@@ -107,37 +119,46 @@ export default function DocsPage() {
           ))}
         </aside>
 
-        {/* Article Content */}
+        {/* Dynamic Content Area */}
         <main className="flex-1 max-w-3xl">
-          <div className="mb-8">
-            <h1 className="text-5xl font-black tracking-tight mb-4">{activeArticle.title}</h1>
-            <div className="h-1.5 w-20 bg-primary rounded-full mb-8" />
-          </div>
-          
-          <div className="prose prose-slate dark:prose-invert max-w-none">
-            <p className="text-xl leading-relaxed text-muted-foreground font-medium mb-8">
-              {activeArticle.content}
-            </p>
-            
-            <div className="p-8 bg-accent/30 border border-border/20 rounded-[2.5rem] mt-12">
-              <div className="flex items-center gap-3 mb-4 text-primary">
-                <HelpCircle size={24} />
-                <h4 className="text-lg font-black uppercase tracking-wider">Pro Tip</h4>
-              </div>
-              <p className="font-bold text-muted-foreground leading-relaxed">
-                Consistent focus sessions are the key to long-term progress. Use the goals feature to track your multi-day projects and visualize your velocity.
-              </p>
+          <motion.div
+            key={activeArticle.slug}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="mb-10">
+              <h1 className="text-6xl font-black tracking-tightest mb-6 leading-[1.1]">{activeArticle.title}</h1>
+              <div className="h-2 w-24 bg-primary rounded-full" />
             </div>
-          </div>
+            
+            <div className="prose prose-slate dark:prose-invert max-w-none">
+              <p className="text-2xl leading-relaxed text-muted-foreground font-bold mb-12">
+                {activeArticle.content}
+              </p>
+              
+              <div className="p-10 bg-card/60 border-2 border-border/40 rounded-[3rem] shadow-2xl relative overflow-hidden card-shine">
+                <div className="flex items-center gap-4 mb-6 text-primary">
+                  <div className="p-3 bg-primary/10 rounded-2xl">
+                    <Rocket size={24} strokeWidth={3} />
+                  </div>
+                  <h4 className="text-xl font-black uppercase tracking-widest">Master Workflow</h4>
+                </div>
+                <p className="text-lg font-bold text-muted-foreground leading-relaxed">
+                  Focus is designed for speed. Combine the **Command Palette** with **Zen Mode** to enter a peak state of productivity. Your data is synced automatically, so you can pick up exactly where you left off on any device.
+                </p>
+              </div>
+            </div>
 
-          <div className="mt-12 pt-12 border-t border-border/20 flex justify-between items-center">
-            <button className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-all">
-              <ChevronRight className="rotate-180" size={16} /> Previous
-            </button>
-            <button className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-primary hover:underline transition-all">
-              Next <ChevronRight size={16} />
-            </button>
-          </div>
+            <div className="mt-20 pt-10 border-t-2 border-border/20 flex justify-between items-center">
+              <button className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-all active:scale-95">
+                <ArrowLeft size={16} strokeWidth={3} /> Previous Guide
+              </button>
+              <button className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-primary hover:bg-primary/5 px-6 py-3 rounded-xl transition-all active:scale-95">
+                Next Guide <ChevronRight size={16} strokeWidth={3} />
+              </button>
+            </div>
+          </motion.div>
         </main>
       </div>
     </div>

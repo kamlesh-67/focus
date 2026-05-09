@@ -7,7 +7,8 @@ import {
   Calendar, 
   Target, 
   StickyNote, 
-  Settings 
+  Settings,
+  BookOpen
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
@@ -17,6 +18,7 @@ const navItems = [
   { icon: Calendar, label: 'Calendar', href: '/calendar' },
   { icon: Target, label: 'Goals', href: '/goals' },
   { icon: StickyNote, label: 'Notes', href: '/notes' },
+  { icon: BookOpen, label: 'Docs', href: '/docs' },
   { icon: Settings, label: 'Settings', href: '/settings' },
 ];
 
@@ -45,8 +47,8 @@ export function BottomNav() {
                 transition={{ type: "spring", damping: 20, stiffness: 300 }}
               />
             )}
-            <item.icon size={22} strokeWidth={isActive ? 3 : 2} />
-            <span className="text-[9px] font-black uppercase tracking-widest">{item.label}</span>
+            <item.icon size={20} strokeWidth={isActive ? 3 : 2} />
+            <span className="text-[8px] font-black uppercase tracking-widest">{item.label}</span>
           </Link>
         );
       })}

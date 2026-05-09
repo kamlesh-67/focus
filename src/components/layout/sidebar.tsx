@@ -15,7 +15,8 @@ import {
   Play, 
   Pause, 
   RotateCcw, 
-  Timer
+  Timer,
+  BookOpen
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
@@ -30,6 +31,7 @@ const navItems = [
   { icon: Calendar, label: 'Calendar', href: '/calendar' },
   { icon: Target, label: 'Goals', href: '/goals' },
   { icon: StickyNote, label: 'Notes', href: '/notes' },
+  { icon: BookOpen, label: 'Docs', href: '/docs' },
   { icon: Settings, label: 'Settings', href: '/settings' },
 ];
 
@@ -66,11 +68,15 @@ export function Sidebar() {
 
   return (
     <aside className="hidden md:flex flex-col w-72 border-r-2 border-border/40 h-screen sticky top-0 bg-card/50 backdrop-blur-xl">
-      <div className="p-10">
-        <h1 className="text-3xl font-black tracking-tighter bg-gradient-to-br from-primary to-blue-500 bg-clip-text text-transparent">Focus</h1>
+      <div className="p-10 pb-6 flex flex-col">
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-3xl font-black tracking-tighter bg-gradient-to-br from-primary to-blue-500 bg-clip-text text-transparent">Focus</h1>
+          <span className="px-2 py-0.5 bg-primary/10 text-primary rounded-md text-[10px] font-black uppercase tracking-widest border border-primary/20">V1.0.0</span>
+        </div>
+        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-1">Pro Dashboard</p>
       </div>
       
-      <nav className="flex-1 px-6 space-y-2">
+      <nav className="flex-1 px-6 space-y-2 mt-4">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
