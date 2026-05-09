@@ -12,10 +12,6 @@ import {
   Moon,
   LogOut,
   User,
-  Play, 
-  Pause, 
-  RotateCcw, 
-  Timer,
   BookOpen,
   Plane,
   Wind
@@ -26,7 +22,6 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { usePomodoro } from '@/lib/contexts/pomodoro-context';
 
 const navItems = [
   { icon: CheckSquare, label: 'Tasks', href: '/dashboard' },
@@ -45,7 +40,6 @@ export function Sidebar() {
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<any>(null);
   const supabase = createClient();
-  const { timeLeft, isActive, mode, startTimer, pauseTimer, resetTimer } = usePomodoro();
 
   useEffect(() => {
     setMounted(true);
@@ -63,18 +57,13 @@ export function Sidebar() {
     router.refresh();
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   return (
-    <aside className="hidden md:flex flex-col w-72 border-r-2 border-border/40 h-screen sticky top-0 bg-card/50 backdrop-blur-xl">
-      <div className="p-10 pb-6">
+    <aside className="hidden md:flex flex-col w-72 border-r-2 border-border/40 h-screen sticky top-0 bg-card overflow-hidden">
+      {/* Fixed Header */}
+      <div className="p-8 pb-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-black tracking-tighter bg-gradient-to-br from-primary to-blue-500 bg-clip-text text-transparent leading-none">Focus</h1>
+            <h1 className="text-2xl font-black tracking-tighter bg-gradient-to-br from-primary to-blue-500 bg-clip-text text-transparent leading-none">Focus</h1>
             <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded-md text-[8px] font-black uppercase tracking-widest border border-primary/20">V1.0.0</span>
           </div>
           <Link 
@@ -82,22 +71,22 @@ export function Sidebar() {
             title="Documentation"
             className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-xl transition-all"
           >
-            <BookOpen size={20} strokeWidth={2.5} />
+            <BookOpen size={18} strokeWidth={2.5} />
           </Link>
         </div>
-        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-1">Pro Dashboard</p>
       </div>
       
-      <nav className="flex-1 px-6 space-y-1 mt-2">
+      {/* Navigation Area */}
+      <nav className="flex-1 px-6 space-y-1 overflow-hidden py-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
-              title={item.label} // Desktop Tooltip
+              title={item.label}
               className={cn(
-                "relative flex items-center gap-4 px-5 py-3.5 rounded-[1.25rem] transition-all duration-300 group",
+                "relative flex items-center gap-4 px-4 py-3 rounded-[1.25rem] transition-all duration-300 group",
                 isActive 
                   ? "text-primary-foreground shadow-[0_10px_25px_-5px_rgba(37,99,235,0.4)]" 
                   : "text-muted-foreground hover:bg-accent/50 hover:text-foreground active:scale-95"
@@ -110,67 +99,47 @@ export function Sidebar() {
                   transition={{ type: "spring", damping: 25, stiffness: 350 }}
                 />
               )}
-              <item.icon size={20} strokeWidth={isActive ? 3 : 2} className={cn(isActive ? "scale-110" : "group-hover:scale-110 transition-transform")} />
+              <item.icon size={18} strokeWidth={isActive ? 3 : 2} className={cn(isActive ? "scale-110" : "group-hover:scale-110 transition-transform")} />
               <span className="font-black text-xs uppercase tracking-widest">{item.label}</span>
             </Link>
           );
         })}
       </nav>
 
-      <div className="p-6 space-y-4 border-t-2 border-border/40">
-        <div className="p-5 rounded-[2rem] bg-accent/20 border border-border/10 shadow-inner">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2 text-primary">
-              <Timer size={16} strokeWidth={3} />
-              <span className="text-[10px] font-black uppercase tracking-widest">{mode}</span>
-            </div>
-            <span className="text-2xl font-black tabular-nums">{formatTime(timeLeft)}</span>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-2">
-            {!isActive ? (
-              <button onClick={startTimer} className="col-span-2 py-2 bg-primary text-white rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-md">
-                <Play size={14} fill="currentColor" /> <span className="text-[10px] font-black uppercase">Start</span>
-              </button>
-            ) : (
-              <button onClick={pauseTimer} className="col-span-2 py-2 bg-accent text-foreground rounded-xl flex items-center justify-center gap-2 hover:bg-accent/80 transition-all border border-border/20">
-                <Pause size={14} fill="currentColor" /> <span className="text-[10px] font-black uppercase">Pause</span>
-              </button>
-            )}
-            <button onClick={resetTimer} className="py-2 bg-accent/50 text-muted-foreground rounded-xl flex items-center justify-center hover:bg-accent transition-all border border-border/10">
-              <RotateCcw size={14} strokeWidth={3} />
-            </button>
-          </div>
-        </div>
-
+      {/* Footer Area - Compact */}
+      <div className="p-6 pt-2 border-t-2 border-border/40 space-y-4">
         {user && (
-          <div className="flex items-center gap-4 p-4 rounded-2xl bg-accent/30 border border-border/10">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-              <User size={20} strokeWidth={2.5} />
+          <div className="flex items-center gap-3 p-3 rounded-2xl bg-accent/30 border border-border/10">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+              <User size={16} strokeWidth={2.5} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">User</p>
-              <p className="text-sm font-black truncate leading-tight">{user.email?.split('@')[0]}</p>
+              <p className="text-xs font-black truncate leading-tight">{user.email?.split('@')[0]}</p>
+            </div>
+            <div className="flex items-center gap-1">
+              {/* Theme Toggle Button - Small Icon Only */}
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                title="Toggle Theme"
+                className="p-2 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-all active:scale-90"
+              >
+                {mounted && (theme === 'dark' ? <Sun size={16} className="text-yellow-400" /> : <Moon size={16} className="text-blue-600" />)}
+              </button>
+
+              {/* Sign Out Button - Small Icon Only */}
+              <button
+                onClick={handleSignOut}
+                title="Sign Out"
+                className="p-2 rounded-lg hover:bg-destructive/10 text-destructive transition-all active:scale-90"
+              >
+                <LogOut size={16} strokeWidth={3} />
+              </button>
             </div>
           </div>
         )}
         
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-accent/30 hover:bg-accent text-muted-foreground hover:text-foreground transition-all active:scale-95"
-          >
-            {mounted && (theme === 'dark' ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} className="text-blue-600" />)}
-            <span className="font-black text-[10px] uppercase tracking-tighter">Theme</span>
-          </button>
-
-          <button
-            onClick={handleSignOut}
-            className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-destructive/5 hover:bg-destructive/10 text-destructive transition-all active:scale-95"
-          >
-            <LogOut size={20} strokeWidth={3} />
-            <span className="font-black text-[10px] uppercase tracking-tighter">Exit</span>
-          </button>
+        <div className="text-center">
+           <p className="text-[8px] font-black text-muted-foreground/40 uppercase tracking-[0.3em]">Precision Productivity</p>
         </div>
       </div>
     </aside>
