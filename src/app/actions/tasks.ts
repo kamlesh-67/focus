@@ -14,73 +14,95 @@ const TaskSchema = z.object({
   projectId: z.string().optional().nullable(),
 });
 
-export async function createTask(data: z.infer<typeof TaskSchema>) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Unauthorized');
+export type ActionResult<T> = {
+  success: boolean;
+  data?: T;
+  error?: string;
+};
 
-  const id = `task_${Math.random().toString(36).substring(2, 11)}`;
-  
-  const { data: task, error } = await supabase
-    .from('Task')
-    .insert([{
-      id,
-      ...data,
-      userId: user.id,
-      completed: false,
-      updatedAt: new Date().toISOString(),
-    }])
-    .select()
-    .single();
+export async function createTask(data: z.infer<typeof TaskSchema>): Promise<ActionResult<any>> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return { success: false, error: 'You must be logged in to create a task.' };
+    }
 
-  if (error) {
-    console.error('Error creating task:', error);
-    throw new Error(error.message);
+    const id = `task_${Math.random().toString(36).substring(2, 11)}`;
+    
+    const { data: task, error } = await supabase
+      .from('Task')
+      .insert([{
+        id,
+        ...data,
+        userId: user.id,
+        completed: false,
+        updatedAt: new Date().toISOString(),
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase RLS Error:', error);
+      return { 
+        success: false, 
+        error: error.code === '42501' 
+          ? 'Permission denied. Please ensure your database tables and RLS policies are set up correctly in Supabase.' 
+          : error.message 
+      };
+    }
+
+    revalidatePath('/');
+    revalidatePath('/calendar');
+    return { success: true, data: task };
+  } catch (e: any) {
+    return { success: false, error: e.message || 'An unexpected error occurred.' };
   }
-
-  revalidatePath('/');
-  revalidatePath('/calendar');
-  return task;
 }
 
-export async function toggleTask(id: string, completed: boolean) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Unauthorized');
+export async function toggleTask(id: string, completed: boolean): Promise<ActionResult<void>> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
 
-  const { error } = await supabase
-    .from('Task')
-    .update({ completed, updatedAt: new Date().toISOString() })
-    .eq('id', id)
-    .eq('userId', user.id);
+    const { error } = await supabase
+      .from('Task')
+      .update({ completed, updatedAt: new Date().toISOString() })
+      .eq('id', id)
+      .eq('userId', user.id);
 
-  if (error) {
-    console.error('Error toggling task:', error);
-    throw new Error(error.message);
+    if (error) return { success: false, error: error.message };
+
+    revalidatePath('/');
+    revalidatePath('/calendar');
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message };
   }
-
-  revalidatePath('/');
-  revalidatePath('/calendar');
 }
 
-export async function deleteTask(id: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Unauthorized');
+export async function deleteTask(id: string): Promise<ActionResult<void>> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
 
-  const { error } = await supabase
-    .from('Task')
-    .delete()
-    .eq('id', id)
-    .eq('userId', user.id);
+    const { error } = await supabase
+      .from('Task')
+      .delete()
+      .eq('id', id)
+      .eq('userId', user.id);
 
-  if (error) {
-    console.error('Error deleting task:', error);
-    throw new Error(error.message);
+    if (error) return { success: false, error: error.message };
+
+    revalidatePath('/');
+    revalidatePath('/calendar');
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message };
   }
-
-  revalidatePath('/');
-  revalidatePath('/calendar');
 }
 
 export async function getTasks(): Promise<(Task & { project: { title: string } | null })[]> {

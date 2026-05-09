@@ -6,6 +6,7 @@ import * as z from 'zod';
 import { createTask } from '@/app/actions/tasks';
 import { useTransition } from 'react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const TaskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -13,6 +14,7 @@ const TaskSchema = z.object({
   dueDate: z.string().optional().nullable(),
   priority: z.enum(['Low', 'Medium', 'High', 'Urgent']),
   category: z.string().optional().nullable(),
+  projectId: z.string().optional().nullable(),
 });
 
 type TaskValues = z.infer<typeof TaskSchema>;
@@ -38,11 +40,19 @@ export function TaskForm({ onSuccess, initialDateString }: TaskFormProps) {
 
   const onSubmit = (data: TaskValues) => {
     startTransition(async () => {
-      await createTask({
+      const result = await createTask({
         ...data,
         dueDate: data.dueDate ? new Date(data.dueDate) : null,
       });
-      onSuccess();
+
+      if (result.success) {
+        toast.success('Task created successfully!');
+        onSuccess();
+      } else {
+        toast.error('Failed to create task', {
+          description: result.error,
+        });
+      }
     });
   };
 

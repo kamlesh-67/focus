@@ -6,6 +6,7 @@ import { createNote, deleteNote, updateNote } from '@/app/actions/notes';
 import { Trash2, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const colors = [
   'bg-yellow-100 dark:bg-yellow-900/30',
@@ -30,16 +31,30 @@ export function NoteGrid({ initialNotes }: { initialNotes: StickyNote[] }) {
     
     const color = colors[Math.floor(Math.random() * colors.length)];
     startTransition(async () => {
-      const note = await createNote(newNoteContent, color);
-      setNotes([note, ...notes]);
-      setNewNoteContent('');
+      const result = await createNote(newNoteContent, color);
+      if (result.success && result.data) {
+        setNotes([result.data, ...notes]);
+        setNewNoteContent('');
+        toast.success('Note saved!');
+      } else {
+        toast.error('Failed to save note', {
+          description: result.error
+        });
+      }
     });
   };
 
   const handleDelete = async (id: string) => {
     startTransition(async () => {
-      await deleteNote(id);
-      setNotes(notes.filter(n => n.id !== id));
+      const result = await deleteNote(id);
+      if (result.success) {
+        setNotes(notes.filter(n => n.id !== id));
+        toast.success('Note deleted');
+      } else {
+        toast.error('Failed to delete note', {
+          description: result.error
+        });
+      }
     });
   };
 
