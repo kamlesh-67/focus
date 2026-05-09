@@ -16,9 +16,12 @@ export async function createProject(data: z.infer<typeof ProjectSchema>) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
+  const id = `proj_${Math.random().toString(36).substring(2, 11)}`;
+
   const { data: project, error } = await supabase
     .from('Project')
     .insert([{
+      id,
       ...data,
       userId: user.id,
       updatedAt: new Date().toISOString(),

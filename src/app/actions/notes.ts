@@ -9,9 +9,12 @@ export async function createNote(content: string, color?: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
+  const id = `note_${Math.random().toString(36).substring(2, 11)}`;
+
   const { data: note, error } = await supabase
     .from('StickyNote')
     .insert([{
+      id,
       content,
       color,
       userId: user.id,

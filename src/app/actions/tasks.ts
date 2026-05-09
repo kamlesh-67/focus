@@ -19,9 +19,12 @@ export async function createTask(data: z.infer<typeof TaskSchema>) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
+  const id = `task_${Math.random().toString(36).substring(2, 11)}`;
+  
   const { data: task, error } = await supabase
     .from('Task')
     .insert([{
+      id,
       ...data,
       userId: user.id,
       completed: false,
