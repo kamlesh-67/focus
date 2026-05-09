@@ -15,6 +15,7 @@ const TaskSchema = z.object({
   priority: z.enum(['Low', 'Medium', 'High', 'Urgent']),
   category: z.string().optional().nullable(),
   projectId: z.string().optional().nullable(),
+  status: z.enum(['Open', 'Analysis', 'Design', 'Development', 'Done', 'Hold', 'Pending']),
 });
 
 type TaskValues = z.infer<typeof TaskSchema>;
@@ -35,6 +36,7 @@ export function TaskForm({ onSuccess, initialDateString }: TaskFormProps) {
     resolver: zodResolver(TaskSchema),
     defaultValues: {
       priority: 'Medium',
+      status: 'Open',
       dueDate: initialDateString || '',
     },
   });
@@ -44,7 +46,7 @@ export function TaskForm({ onSuccess, initialDateString }: TaskFormProps) {
       const result = await createTask({
         ...data,
         dueDate: data.dueDate ? new Date(data.dueDate) : null,
-      });
+      } as any);
 
       if (result.success) {
         toast.success('Task created successfully!');
@@ -169,19 +171,43 @@ export function TaskForm({ onSuccess, initialDateString }: TaskFormProps) {
         </div>
       </div>
 
-      <div>
-        <label className={labelClasses}>Category Tag</label>
-        <input
-          {...register('category')}
-          className={inputClasses}
-          placeholder="Work, Personal, Learning..."
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div>
+          <label className={labelClasses}>Status</label>
+          <div className="relative">
+            <select
+              {...register('status')}
+              className={cn(inputClasses, "appearance-none")}
+            >
+              <option value="Open">Open</option>
+              <option value="Analysis">Analysis</option>
+              <option value="Design">Design</option>
+              <option value="Development">Development</option>
+              <option value="Hold">Hold</option>
+              <option value="Pending">Pending</option>
+              <option value="Done">Done</option>
+            </select>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+              <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M1 1L6 6L11 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div>
+          <label className={labelClasses}>Category Tag</label>
+          <input
+            {...register('category')}
+            className={inputClasses}
+            placeholder="Work, Personal..."
+          />
+        </div>
       </div>
 
       <button
         type="submit"
         disabled={isPending}
-        className="w-full bg-primary text-primary-foreground font-bold py-5 rounded-2xl hover:opacity-95 transition-all shadow-xl shadow-primary/20 active:scale-[0.98] disabled:opacity-50 mt-4 text-lg"
+        className="w-full bg-primary text-primary-foreground font-black py-5 rounded-2xl hover:opacity-95 transition-all shadow-xl shadow-primary/20 active:scale-[0.98] disabled:opacity-50 mt-4 text-lg"
       >
         {isPending ? (
           <div className="flex items-center justify-center gap-2">

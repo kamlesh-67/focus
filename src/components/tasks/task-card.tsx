@@ -1,7 +1,15 @@
 'use client';
 
 import { Task } from '@prisma/client';
-import { CheckCircle2, Circle, Clock, Tag, Trash2, Wind } from 'lucide-react';
+import { 
+  CheckCircle2, 
+  Circle, 
+  Clock, 
+  Tag, 
+  Trash2, 
+  Wind,
+  GripVertical
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toggleTask, deleteTask } from '@/app/actions/tasks';
 import { useTransition, useState, useEffect } from 'react';
@@ -9,6 +17,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TaskDetail } from './task-detail';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
+import { playSound } from '@/lib/utils/sounds';
+import { ZenFocusMode } from '../ui/zen-focus-mode';
 
 interface TaskCardProps {
   task: Task & { project?: { title: string } | null };
@@ -21,8 +31,15 @@ const priorityColors = {
   Urgent: 'text-red-500 bg-red-500/10',
 };
 
-import { playSound } from '@/lib/utils/sounds';
-import { ZenFocusMode } from '../ui/zen-focus-mode';
+const statusColors = {
+  'Open': 'bg-slate-100 text-slate-700',
+  'Analysis': 'bg-purple-100 text-purple-700',
+  'Design': 'bg-pink-100 text-pink-700',
+  'Development': 'bg-blue-100 text-blue-700',
+  'Done': 'bg-green-100 text-green-700',
+  'Hold': 'bg-orange-100 text-orange-700',
+  'Pending': 'bg-yellow-100 text-yellow-700',
+};
 
 export function TaskCard({ task }: TaskCardProps) {
   const [isPending, startTransition] = useTransition();
@@ -42,20 +59,15 @@ export function TaskCard({ task }: TaskCardProps) {
       if (result.success) {
         if (newStatus) {
           playSound('success');
-          toast.success('Task completed!', {
-            description: task.title,
-          });
+          toast.success('Task completed!');
           confetti({
             particleCount: 150,
             spread: 80,
             origin: { y: 0.6 },
-            colors: ['#2563eb', '#60a5fa', '#93c5fd']
+            colors: ['#2563eb', '#60a5fa']
           });
-        } else {
-          toast.info('Task marked as pending');
         }
       } else {
-        playSound('error');
         toast.error('Error', { description: result.error });
       }
     });
@@ -63,8 +75,7 @@ export function TaskCard({ task }: TaskCardProps) {
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    playSound('click');
-    if (confirm('Are you sure you want to delete this task?')) {
+    if (confirm('Delete this task?')) {
       startTransition(async () => {
         const result = await deleteTask(task.id);
         if (result.success) {
@@ -81,81 +92,81 @@ export function TaskCard({ task }: TaskCardProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-        onClick={() => {
-          playSound('click');
-          setIsDetailOpen(true);
-        }}
         className={cn(
-          "group p-5 rounded-[2rem] border-2 border-border/40 bg-card hover:shadow-2xl hover:shadow-primary/5 transition-all cursor-pointer card-shine",
-          task.completed && "opacity-60 grayscale-[0.5]"
+          "group relative flex items-stretch gap-0 rounded-[1.5rem] border-2 border-border/40 bg-card hover:border-primary/20 transition-all",
+          task.completed && "opacity-60"
         )}
       >
-        <div className="flex items-start gap-4">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleToggle();
-            }}
-            className="mt-1 text-muted-foreground hover:text-primary transition-all active:scale-75"
-            disabled={isPending}
-          >
-            {task.completed ? (
-              <CheckCircle2 className="text-primary" size={28} strokeWidth={3} />
-            ) : (
-              <Circle size={28} strokeWidth={2.5} />
-            )}
-          </button>
-          
-          <div className="flex-1 min-w-0">
-            <h3 className={cn(
-              "text-xl font-black truncate tracking-tighter",
-              task.completed && "line-through text-muted-foreground"
-            )}>
-              {task.title}
-            </h3>
-            
-            {task.description && (
-              <p className="text-sm text-muted-foreground mt-1 line-clamp-1 font-bold">
-                {task.description}
-              </p>
-            )}
-            
-            <div className="flex flex-wrap items-center gap-3 mt-4">
-              <span className={cn(
-                "text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-xl",
-                priorityColors[task.priority as keyof typeof priorityColors]
-              )}>
-                {task.priority}
-              </span>
-              
-              {task.dueDate && (
-                <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground bg-accent/50 px-3 py-1.5 rounded-xl border border-border/10">
-                  <Clock size={14} />
-                  <span>{mounted ? new Date(task.dueDate).toLocaleDateString() : '---'}</span>
-                </div>
-              )}
+        {/* Interaction Side: Toggle */}
+        <button
+          onClick={handleToggle}
+          disabled={isPending}
+          className="flex items-center justify-center px-5 border-r border-border/10 hover:bg-accent/30 transition-all active:scale-90"
+        >
+          {task.completed ? (
+            <CheckCircle2 className="text-primary" size={28} strokeWidth={3} />
+          ) : (
+            <Circle size={28} strokeWidth={2.5} className="text-muted-foreground" />
+          )}
+        </button>
 
-              {!task.completed && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsZenOpen(true);
-                  }}
-                  className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/20 hover:bg-primary hover:text-white transition-all active:scale-90"
-                >
-                  <Wind size={14} /> Focus
-                </button>
-              )}
-            </div>
+        {/* Content Side: Open Detail */}
+        <div 
+          onClick={() => setIsDetailOpen(true)}
+          className="flex-1 p-5 cursor-pointer min-w-0"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            {task.category && (
+              <span className="text-[9px] font-black uppercase tracking-widest text-primary bg-primary/5 px-2 py-0.5 rounded border border-primary/10">
+                {task.category}
+              </span>
+            )}
+            <span className={cn(
+              "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border border-border/20",
+              priorityColors[task.priority as keyof typeof priorityColors]
+            )}>
+              {task.priority}
+            </span>
           </div>
 
+          <h3 className={cn(
+            "text-lg font-black truncate tracking-tighter",
+            task.completed && "line-through text-muted-foreground opacity-50"
+          )}>
+            {task.title}
+          </h3>
+
+          <div className="flex items-center gap-3 mt-3">
+            {task.dueDate && (
+              <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
+                <Clock size={12} />
+                <span>{mounted ? new Date(task.dueDate).toLocaleDateString() : '---'}</span>
+              </div>
+            )}
+            {task.project && (
+              <div className="text-[10px] font-black text-primary/60 truncate max-w-[100px]">
+                • {task.project.title}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Action Side: Focus & Delete */}
+        <div className="flex items-center gap-1 px-4">
+          {!task.completed && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setIsZenOpen(true); }}
+              className="p-3 text-primary hover:bg-primary/10 rounded-2xl transition-all active:scale-75"
+            >
+              <Wind size={20} strokeWidth={2.5} />
+            </button>
+          )}
           <button
             onClick={handleDelete}
-            className="opacity-0 group-hover:opacity-100 p-2 text-muted-foreground hover:text-destructive transition-all active:scale-75"
             disabled={isPending}
+            className="p-3 text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-2xl transition-all active:scale-75"
           >
-            <Trash2 size={22} strokeWidth={2.5} />
+            <Trash2 size={20} />
           </button>
         </div>
       </motion.div>
@@ -164,17 +175,11 @@ export function TaskCard({ task }: TaskCardProps) {
         {isDetailOpen && (
           <TaskDetail task={task} onClose={() => setIsDetailOpen(false)} />
         )}
-      </AnimatePresence>
-
-      <AnimatePresence>
         {isZenOpen && (
           <ZenFocusMode 
             task={task} 
             onClose={() => setIsZenOpen(false)} 
-            onComplete={() => {
-              setIsZenOpen(false);
-              handleToggle();
-            }}
+            onComplete={() => { setIsZenOpen(false); handleToggle(); }}
           />
         )}
       </AnimatePresence>

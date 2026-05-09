@@ -16,7 +16,9 @@ import {
   Pause, 
   RotateCcw, 
   Timer,
-  BookOpen
+  BookOpen,
+  Plane,
+  Wind
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
@@ -30,8 +32,9 @@ const navItems = [
   { icon: CheckSquare, label: 'Tasks', href: '/dashboard' },
   { icon: Calendar, label: 'Calendar', href: '/calendar' },
   { icon: Target, label: 'Goals', href: '/goals' },
+  { icon: Wind, label: 'Focus', href: '/focus' },
+  { icon: Plane, label: 'Itinerary', href: '/itinerary' },
   { icon: StickyNote, label: 'Notes', href: '/notes' },
-  { icon: BookOpen, label: 'Docs', href: '/docs' },
   { icon: Settings, label: 'Settings', href: '/settings' },
 ];
 
@@ -68,23 +71,33 @@ export function Sidebar() {
 
   return (
     <aside className="hidden md:flex flex-col w-72 border-r-2 border-border/40 h-screen sticky top-0 bg-card/50 backdrop-blur-xl">
-      <div className="p-10 pb-6 flex flex-col">
-        <div className="flex items-center justify-between mb-2">
-          <h1 className="text-3xl font-black tracking-tighter bg-gradient-to-br from-primary to-blue-500 bg-clip-text text-transparent">Focus</h1>
-          <span className="px-2 py-0.5 bg-primary/10 text-primary rounded-md text-[10px] font-black uppercase tracking-widest border border-primary/20">V1.0.0</span>
+      <div className="p-10 pb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-black tracking-tighter bg-gradient-to-br from-primary to-blue-500 bg-clip-text text-transparent leading-none">Focus</h1>
+            <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded-md text-[8px] font-black uppercase tracking-widest border border-primary/20">V1.0.0</span>
+          </div>
+          <Link 
+            href="/docs" 
+            title="Documentation"
+            className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-xl transition-all"
+          >
+            <BookOpen size={20} strokeWidth={2.5} />
+          </Link>
         </div>
         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] ml-1">Pro Dashboard</p>
       </div>
       
-      <nav className="flex-1 px-6 space-y-2 mt-4">
+      <nav className="flex-1 px-6 space-y-1 mt-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
+              title={item.label} // Desktop Tooltip
               className={cn(
-                "relative flex items-center gap-4 px-5 py-4 rounded-[1.25rem] transition-all duration-300 group",
+                "relative flex items-center gap-4 px-5 py-3.5 rounded-[1.25rem] transition-all duration-300 group",
                 isActive 
                   ? "text-primary-foreground shadow-[0_10px_25px_-5px_rgba(37,99,235,0.4)]" 
                   : "text-muted-foreground hover:bg-accent/50 hover:text-foreground active:scale-95"
@@ -97,35 +110,34 @@ export function Sidebar() {
                   transition={{ type: "spring", damping: 25, stiffness: 350 }}
                 />
               )}
-              <item.icon size={22} strokeWidth={isActive ? 3 : 2} className={cn(isActive ? "scale-110" : "group-hover:scale-110 transition-transform")} />
-              <span className="font-black text-sm uppercase tracking-widest">{item.label}</span>
+              <item.icon size={20} strokeWidth={isActive ? 3 : 2} className={cn(isActive ? "scale-110" : "group-hover:scale-110 transition-transform")} />
+              <span className="font-black text-xs uppercase tracking-widest">{item.label}</span>
             </Link>
           );
         })}
       </nav>
 
       <div className="p-6 space-y-4 border-t-2 border-border/40">
-        {/* Pomodoro Widget */}
         <div className="p-5 rounded-[2rem] bg-accent/20 border border-border/10 shadow-inner">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 text-primary">
               <Timer size={16} strokeWidth={3} />
-              <span className="text-[10px] font-black uppercase tracking-widest">{mode} Session</span>
+              <span className="text-[10px] font-black uppercase tracking-widest">{mode}</span>
             </div>
             <span className="text-2xl font-black tabular-nums">{formatTime(timeLeft)}</span>
           </div>
           
           <div className="grid grid-cols-3 gap-2">
             {!isActive ? (
-              <button onClick={startTimer} className="col-span-2 py-2 bg-primary text-white rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-all">
+              <button onClick={startTimer} className="col-span-2 py-2 bg-primary text-white rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-md">
                 <Play size={14} fill="currentColor" /> <span className="text-[10px] font-black uppercase">Start</span>
               </button>
             ) : (
-              <button onClick={pauseTimer} className="col-span-2 py-2 bg-accent text-foreground rounded-xl flex items-center justify-center gap-2 hover:bg-accent/80 transition-all">
+              <button onClick={pauseTimer} className="col-span-2 py-2 bg-accent text-foreground rounded-xl flex items-center justify-center gap-2 hover:bg-accent/80 transition-all border border-border/20">
                 <Pause size={14} fill="currentColor" /> <span className="text-[10px] font-black uppercase">Pause</span>
               </button>
             )}
-            <button onClick={resetTimer} className="py-2 bg-accent/50 text-muted-foreground rounded-xl flex items-center justify-center hover:bg-accent transition-all">
+            <button onClick={resetTimer} className="py-2 bg-accent/50 text-muted-foreground rounded-xl flex items-center justify-center hover:bg-accent transition-all border border-border/10">
               <RotateCcw size={14} strokeWidth={3} />
             </button>
           </div>
@@ -156,7 +168,7 @@ export function Sidebar() {
             onClick={handleSignOut}
             className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-destructive/5 hover:bg-destructive/10 text-destructive transition-all active:scale-95"
           >
-            <LogOut size={20} strokeWidth={2.5} />
+            <LogOut size={20} strokeWidth={3} />
             <span className="font-black text-[10px] uppercase tracking-tighter">Exit</span>
           </button>
         </div>

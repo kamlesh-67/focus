@@ -5,6 +5,12 @@ import { z } from 'zod';
 import { createClient } from '../../lib/supabase/server';
 import { Task } from '@prisma/client';
 
+export type ActionResult<T> = {
+  success: boolean;
+  data?: T;
+  error?: string;
+};
+
 const TaskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
@@ -12,13 +18,8 @@ const TaskSchema = z.object({
   priority: z.enum(['Low', 'Medium', 'High', 'Urgent']),
   category: z.string().optional().nullable(),
   projectId: z.string().optional().nullable(),
+  status: z.enum(['Open', 'Analysis', 'Design', 'Development', 'Done', 'Hold', 'Pending']).default('Open'),
 });
-
-export type ActionResult<T> = {
-  success: boolean;
-  data?: T;
-  error?: string;
-};
 
 const logAction = (name: string, status: 'START' | 'SUCCESS' | 'ERROR', startTime?: number, details?: any) => {
   const timestamp = new Date().toISOString();
@@ -55,46 +56,38 @@ export async function createTask(data: z.infer<typeof TaskSchema>): Promise<Acti
 
     if (error) {
       logAction('createTask', 'ERROR', startTime, error);
-      return { 
-        success: false, 
-        error: error.code === '42501' 
-          ? 'Permission denied. RLS Violation.' 
-          : error.message 
-      };
+      return { success: false, error: error.message };
     }
 
     revalidatePath('/');
+    revalidatePath('/dashboard');
     revalidatePath('/calendar');
     logAction('createTask', 'SUCCESS', startTime);
     return { success: true, data: task };
   } catch (e: any) {
     logAction('createTask', 'ERROR', startTime, e.message);
-    return { success: false, error: e.message || 'An unexpected error occurred.' };
+    return { success: false, error: e.message };
   }
 }
 
 export async function toggleTask(id: string, completed: boolean): Promise<ActionResult<void>> {
   const startTime = Date.now();
-  logAction('toggleTask', 'START', startTime, { id, completed });
-
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      logAction('toggleTask', 'ERROR', startTime, 'Unauthorized');
-      return { success: false, error: 'Unauthorized' };
-    }
+    if (!user) return { success: false, error: 'Unauthorized' };
 
     const { error } = await supabase
       .from('Task')
-      .update({ completed, updatedAt: new Date().toISOString() })
+      .update({ 
+        completed, 
+        status: completed ? 'Done' : 'Open',
+        updatedAt: new Date().toISOString() 
+      })
       .eq('id', id)
       .eq('userId', user.id);
 
-    if (error) {
-      logAction('toggleTask', 'ERROR', startTime, error);
-      return { success: false, error: error.message };
-    }
+    if (error) return { success: false, error: error.message };
 
     if (completed) {
       const { updateCompletionStats } = await import('./stats');
@@ -102,26 +95,46 @@ export async function toggleTask(id: string, completed: boolean): Promise<Action
     }
 
     revalidatePath('/');
+    revalidatePath('/dashboard');
     revalidatePath('/calendar');
-    logAction('toggleTask', 'SUCCESS', startTime);
     return { success: true };
   } catch (e: any) {
-    logAction('toggleTask', 'ERROR', startTime, e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+export async function updateTaskStatus(id: string, status: string): Promise<ActionResult<void>> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
+
+    const { error } = await supabase
+      .from('Task')
+      .update({ 
+        status, 
+        completed: status === 'Done',
+        updatedAt: new Date().toISOString() 
+      })
+      .eq('id', id)
+      .eq('userId', user.id);
+
+    if (error) return { success: false, error: error.message };
+
+    revalidatePath('/');
+    revalidatePath('/dashboard');
+    return { success: true };
+  } catch (e: any) {
     return { success: false, error: e.message };
   }
 }
 
 export async function deleteTask(id: string): Promise<ActionResult<void>> {
   const startTime = Date.now();
-  logAction('deleteTask', 'START', startTime, { id });
-
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      logAction('deleteTask', 'ERROR', startTime, 'Unauthorized');
-      return { success: false, error: 'Unauthorized' };
-    }
+    if (!user) return { success: false, error: 'Unauthorized' };
 
     const { error } = await supabase
       .from('Task')
@@ -129,24 +142,18 @@ export async function deleteTask(id: string): Promise<ActionResult<void>> {
       .eq('id', id)
       .eq('userId', user.id);
 
-    if (error) {
-      logAction('deleteTask', 'ERROR', startTime, error);
-      return { success: false, error: error.message };
-    }
+    if (error) return { success: false, error: error.message };
 
     revalidatePath('/');
+    revalidatePath('/dashboard');
     revalidatePath('/calendar');
-    logAction('deleteTask', 'SUCCESS', startTime);
     return { success: true };
   } catch (e: any) {
-    logAction('deleteTask', 'ERROR', startTime, e.message);
     return { success: false, error: e.message };
   }
 }
 
 export async function getTasks(): Promise<(Task & { project: { title: string } | null })[]> {
-  const startTime = Date.now();
-  // We log fetching but don't overwhelm with too many details
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -161,14 +168,9 @@ export async function getTasks(): Promise<(Task & { project: { title: string } |
       .eq('userId', user.id)
       .order('createdAt', { ascending: false });
 
-    if (error) {
-      logAction('getTasks', 'ERROR', startTime, error);
-      return [];
-    }
-
+    if (error) return [];
     return tasks as (Task & { project: { title: string } | null })[];
-  } catch (error) {
-    logAction('getTasks', 'ERROR', startTime, error);
+  } catch {
     return [];
   }
 }

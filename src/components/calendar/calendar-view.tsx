@@ -5,7 +5,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Task } from '@prisma/client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TaskDetail } from '../tasks/task-detail';
 import { TaskForm } from '../tasks/task-form';
 import { ProjectForm } from '../projects/project-form';
@@ -27,6 +27,14 @@ export function CalendarView({ tasks }: CalendarViewProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [creationDate, setCreationDate] = useState<string | null>(null);
   const [creationType, setCreationType] = useState<'task' | 'project' | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const events = tasks
     .filter((task) => task.dueDate)
@@ -40,12 +48,16 @@ export function CalendarView({ tasks }: CalendarViewProps) {
     }));
 
   return (
-    <div className="h-full bg-card rounded-[2.5rem] border-2 border-border/50 p-8 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.15)] dark:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)] overflow-hidden calendar-container relative">
+    <div className="h-full bg-card rounded-[2.5rem] border-2 border-border/40 p-4 md:p-8 shadow-xl overflow-hidden calendar-container relative">
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
+        initialView={isMobile ? "dayGridMonth" : "dayGridMonth"} // Can add listWeek for mobile later
         nowIndicator={true}
-        headerToolbar={{
+        headerToolbar={isMobile ? {
+          left: 'prev,next',
+          center: 'title',
+          right: 'today'
+        } : {
           left: 'prev,next today',
           center: 'title',
           right: 'dayGridMonth,timeGridWeek',
@@ -62,13 +74,13 @@ export function CalendarView({ tasks }: CalendarViewProps) {
           setSelectedTask(info.event.extendedProps as Task);
         }}
         eventClassNames={(arg) => {
-          const classes = ['rounded-xl', 'px-3', 'py-1.5', 'font-black', 'text-xs', 'shadow-md', 'border-none', 'my-0.5'];
+          const classes = ['rounded-xl', 'px-2', 'py-1', 'font-black', 'text-[10px]', 'shadow-md', 'border-none'];
           if (arg.event.extendedProps.completed) {
             classes.push('opacity-60', 'line-through');
           }
           return classes;
         }}
-        dayMaxEvents={true}
+        dayMaxEvents={2} // Better for mobile visibility
       />
 
       <AnimatePresence mode="wait">
@@ -80,7 +92,7 @@ export function CalendarView({ tasks }: CalendarViewProps) {
       {/* Creation Modal */}
       <AnimatePresence>
         {creationDate && (
-          <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[120] flex items-end md:items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -89,20 +101,17 @@ export function CalendarView({ tasks }: CalendarViewProps) {
               className="absolute inset-0 bg-background/80 backdrop-blur-md"
             />
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+              initial={{ y: "100%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "100%", opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-lg bg-card border border-border/40 rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] overflow-hidden p-8"
+              className="relative w-full max-w-lg bg-card border-2 border-border/40 rounded-t-[2.5rem] md:rounded-[2.5rem] shadow-2xl overflow-hidden p-8"
             >
               <div className="flex justify-between items-center mb-8">
                 <div>
                   <h2 className="text-2xl font-bold mb-1">
                     {creationType === 'task' ? 'New Task' : creationType === 'project' ? 'New Goal' : 'Create for ' + creationDate}
                   </h2>
-                  <p className="text-sm text-muted-foreground">
-                    {creationType ? 'Fill in the details below' : 'What would you like to create?'}
-                  </p>
                 </div>
                 <button 
                   onClick={() => {
@@ -112,7 +121,7 @@ export function CalendarView({ tasks }: CalendarViewProps) {
                       setCreationDate(null);
                     }
                   }}
-                  className="p-3 bg-accent/50 hover:bg-accent text-muted-foreground hover:text-foreground rounded-2xl transition-all active:scale-90"
+                  className="p-3 bg-accent rounded-2xl active:scale-90"
                 >
                   <X size={20} />
                 </button>
@@ -155,86 +164,35 @@ export function CalendarView({ tasks }: CalendarViewProps) {
           --fc-button-bg-color: var(--background);
           --fc-button-border-color: var(--border);
           --fc-button-text-color: var(--foreground);
-          --fc-button-hover-bg-color: var(--accent);
-          --fc-button-hover-border-color: var(--border);
           --fc-button-active-bg-color: var(--primary);
           --fc-button-active-border-color: var(--primary);
-          --fc-button-active-text-color: var(--primary-foreground);
-          --fc-today-bg-color: rgba(var(--primary), 0.15);
+          --fc-today-bg-color: rgba(var(--primary), 0.1);
           font-family: inherit;
         }
-        
-        .calendar-container .fc-theme-standard td, 
-        .calendar-container .fc-theme-standard th {
+        .fc-theme-standard td, .fc-theme-standard th {
           border: 1px solid var(--border) !important;
-          opacity: 1 !important; /* Ensure grid is sharp */
         }
-
-        .calendar-container .fc-toolbar-title {
-          font-size: 1.75rem !important;
+        .fc-scrollgrid {
+          border: none !important;
+        }
+        .fc-toolbar-title {
           font-weight: 900 !important;
           letter-spacing: -0.05em;
-          color: var(--foreground);
         }
-
-        .calendar-container .fc-button {
+        .fc-button {
           font-weight: 800 !important;
           text-transform: uppercase !important;
-          letter-spacing: 0.05em !important;
-          font-size: 0.75rem !important;
-          border-radius: 1.25rem !important;
-          padding: 0.75rem 1.25rem !important;
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-          border: 2px solid var(--border) !important;
-          background: var(--background) !important;
-          color: var(--foreground) !important;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+          border-radius: 1rem !important;
+          font-size: 0.7rem !important;
         }
-
-        .calendar-container .fc-button-primary:not(:disabled).fc-button-active,
-        .calendar-container .fc-button-primary:not(:disabled):active {
-          background-color: var(--primary) !important;
-          border-color: var(--primary) !important;
-          color: var(--primary-foreground) !important;
-          transform: scale(0.95);
-        }
-
-        /* Today's Date Highlighting - Solid & Clear */
-        .calendar-container .fc-day-today {
-          background: var(--primary) !important;
-          background-color: rgba(37, 99, 235, 0.1) !important;
-          position: relative;
-        }
-
-        .calendar-container .fc-day-today .fc-daygrid-day-number {
-          background: var(--primary);
-          color: white !important;
-          width: 2rem;
-          height: 2rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-          margin: 4px;
-          font-weight: 900;
-        }
-
-        .calendar-container .fc-col-header-cell {
-          padding: 1rem 0 !important;
-          background: var(--accent)/30;
-        }
-
-        .calendar-container .fc-col-header-cell-cushion {
-          font-weight: 900 !important;
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          font-size: 0.7rem;
-          color: var(--muted-foreground);
-        }
-
-        .calendar-container .fc-event {
-          filter: none !important; /* Remove any blur */
-          border: none !important;
+        @media (max-width: 768px) {
+          .fc-daygrid-day-number {
+             font-size: 0.8rem !important;
+             font-weight: 900;
+          }
+          .fc-col-header-cell-cushion {
+             font-size: 0.6rem !important;
+          }
         }
       `}</style>
     </div>

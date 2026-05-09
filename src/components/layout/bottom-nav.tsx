@@ -6,9 +6,9 @@ import {
   CheckSquare, 
   Calendar, 
   Target, 
-  StickyNote, 
+  Wind, 
   Settings,
-  BookOpen
+  Plane
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
@@ -17,8 +17,8 @@ const navItems = [
   { icon: CheckSquare, label: 'Tasks', href: '/dashboard' },
   { icon: Calendar, label: 'Calendar', href: '/calendar' },
   { icon: Target, label: 'Goals', href: '/goals' },
-  { icon: StickyNote, label: 'Notes', href: '/notes' },
-  { icon: BookOpen, label: 'Docs', href: '/docs' },
+  { icon: Wind, label: 'Focus', href: '/focus' },
+  { icon: Plane, label: 'Trip', href: '/itinerary' },
   { icon: Settings, label: 'Settings', href: '/settings' },
 ];
 
@@ -34,10 +34,10 @@ export function BottomNav() {
             key={item.href}
             href={item.href}
             className={cn(
-              "relative flex flex-col items-center gap-1.5 p-2 rounded-2xl transition-all duration-300",
+              "relative flex flex-col items-center gap-1 p-2 rounded-2xl transition-all duration-300",
               isActive 
                 ? "text-primary scale-110" 
-                : "text-muted-foreground hover:text-foreground active:scale-90"
+                : "text-muted-foreground active:scale-90"
             )}
           >
             {isActive && (
@@ -47,8 +47,8 @@ export function BottomNav() {
                 transition={{ type: "spring", damping: 20, stiffness: 300 }}
               />
             )}
-            <item.icon size={20} strokeWidth={isActive ? 3 : 2} />
-            <span className="text-[8px] font-black uppercase tracking-widest">{item.label}</span>
+            <item.icon size={22} strokeWidth={isActive ? 3 : 2} />
+            <span className="text-[7px] font-black uppercase tracking-[0.1em]">{item.label}</span>
           </Link>
         );
       })}
