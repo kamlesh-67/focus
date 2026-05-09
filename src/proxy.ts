@@ -30,10 +30,23 @@ export async function proxy(request: NextRequest) {
   // refreshing the auth token
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user && !request.nextUrl.pathname.startsWith('/login') && !request.nextUrl.pathname.startsWith('/auth')) {
-    // no user, potentially respond by redirecting the user to the login page
+  const isPublicPath = 
+    request.nextUrl.pathname === '/' || 
+    request.nextUrl.pathname.startsWith('/docs') ||
+    request.nextUrl.pathname.startsWith('/support') ||
+    request.nextUrl.pathname.startsWith('/login') ||
+    request.nextUrl.pathname.startsWith('/auth');
+
+  if (!user && !isPublicPath) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  // If logged in and on landing page, redirect to dashboard
+  if (user && request.nextUrl.pathname === '/') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 

@@ -9,7 +9,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 export function NavShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [isNavigating, setIsNavigating] = useState(false);
+  
   const isAuthPage = pathname?.startsWith('/login') || pathname?.startsWith('/auth');
+  const isLandingPage = pathname === '/';
+  const isDocsPage = pathname?.startsWith('/docs');
+  const isSupportPage = pathname?.startsWith('/support');
 
   useEffect(() => {
     setIsNavigating(true);
@@ -17,7 +21,7 @@ export function NavShell({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [pathname]);
 
-  if (isAuthPage) {
+  if (isAuthPage || isLandingPage || isDocsPage || isSupportPage) {
     return <main className="flex-1 min-h-screen bg-background">{children}</main>;
   }
 

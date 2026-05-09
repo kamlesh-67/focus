@@ -21,7 +21,7 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
 const navItems = [
-  { icon: CheckSquare, label: 'Tasks', href: '/' },
+  { icon: CheckSquare, label: 'Tasks', href: '/dashboard' },
   { icon: Calendar, label: 'Calendar', href: '/calendar' },
   { icon: Target, label: 'Goals', href: '/goals' },
   { icon: StickyNote, label: 'Notes', href: '/notes' },
