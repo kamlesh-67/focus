@@ -1,46 +1,49 @@
 'use server';
 
-import sql from '../../lib/database';
 import { revalidatePath } from 'next/cache';
+import { createClient } from '../../lib/supabase/server';
 import { Comment } from '@prisma/client';
 
 export async function addComment(taskId: string, content: string): Promise<Comment> {
-  const id = `comm_${Math.random().toString(36).substr(2, 9)}`;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized');
 
-  const [comment] = await sql`
-    INSERT INTO "Comment" (
-      "id", "taskId", "content"
-    ) VALUES (
-      ${id}, ${taskId}, ${content}
-    )
-    RETURNING *
-  `;
-  
+  const { data: comment, error } = await supabase
+    .from('Comment')
+    .insert([{
+      taskId,
+      content
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding comment:', error);
+    throw new Error(error.message);
+  }
+
   revalidatePath('/');
-  return {
-    id: comment.id,
-    content: comment.content,
-    createdAt: comment.createdAt,
-    taskId: comment.taskId
-  };
+  return comment as Comment;
 }
 
 export async function getComments(taskId: string): Promise<Comment[]> {
   try {
-    const comments = await sql`
-      SELECT * FROM "Comment"
-      WHERE "taskId" = ${taskId}
-      ORDER BY "createdAt" ASC
-    `;
-    
-    return comments.map((c: any) => ({
-      id: c.id,
-      content: c.content,
-      createdAt: c.createdAt,
-      taskId: c.taskId
-    }));
+    const supabase = await createClient();
+    const { data: comments, error } = await supabase
+      .from('Comment')
+      .select('*')
+      .eq('taskId', taskId)
+      .order('createdAt', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching comments:', error);
+      return [];
+    }
+
+    return comments as Comment[];
   } catch (error) {
-    console.error('Error fetching comments:', error);
+    console.error('Error in getComments:', error);
     return [];
   }
 }
