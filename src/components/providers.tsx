@@ -3,6 +3,8 @@
 import { ThemeProvider } from 'next-themes';
 import { ReactNode, useEffect } from 'react';
 import { Toaster } from 'sonner';
+import { PomodoroProvider } from '@/lib/contexts/pomodoro-context';
+import { CommandPalette } from '@/components/ui/command-palette';
 
 export function Providers({ children }: { children: ReactNode }) {
   useEffect(() => {
@@ -15,8 +17,11 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      {children}
-      <Toaster position="bottom-right" richColors closeButton />
+      <PomodoroProvider>
+        {children}
+        <CommandPalette />
+        <Toaster position="bottom-right" richColors closeButton />
+      </PomodoroProvider>
     </ThemeProvider>
   );
 }

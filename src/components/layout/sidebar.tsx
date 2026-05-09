@@ -11,7 +11,11 @@ import {
   Sun, 
   Moon,
   LogOut,
-  User
+  User,
+  Play, 
+  Pause, 
+  RotateCcw, 
+  Timer
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
@@ -19,6 +23,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { usePomodoro } from '@/lib/contexts/pomodoro-context';
 
 const navItems = [
   { icon: CheckSquare, label: 'Tasks', href: '/dashboard' },
@@ -35,6 +40,7 @@ export function Sidebar() {
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<any>(null);
   const supabase = createClient();
+  const { timeLeft, isActive, mode, startTimer, pauseTimer, resetTimer } = usePomodoro();
 
   useEffect(() => {
     setMounted(true);
@@ -50,6 +56,12 @@ export function Sidebar() {
     toast.success('Signed out');
     router.push('/login');
     router.refresh();
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -86,10 +98,36 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="p-6 mt-auto border-t-2 border-border/40 space-y-4">
+      <div className="p-6 space-y-4 border-t-2 border-border/40">
+        {/* Pomodoro Widget */}
+        <div className="p-5 rounded-[2rem] bg-accent/20 border border-border/10 shadow-inner">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2 text-primary">
+              <Timer size={16} strokeWidth={3} />
+              <span className="text-[10px] font-black uppercase tracking-widest">{mode} Session</span>
+            </div>
+            <span className="text-2xl font-black tabular-nums">{formatTime(timeLeft)}</span>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-2">
+            {!isActive ? (
+              <button onClick={startTimer} className="col-span-2 py-2 bg-primary text-white rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-all">
+                <Play size={14} fill="currentColor" /> <span className="text-[10px] font-black uppercase">Start</span>
+              </button>
+            ) : (
+              <button onClick={pauseTimer} className="col-span-2 py-2 bg-accent text-foreground rounded-xl flex items-center justify-center gap-2 hover:bg-accent/80 transition-all">
+                <Pause size={14} fill="currentColor" /> <span className="text-[10px] font-black uppercase">Pause</span>
+              </button>
+            )}
+            <button onClick={resetTimer} className="py-2 bg-accent/50 text-muted-foreground rounded-xl flex items-center justify-center hover:bg-accent transition-all">
+              <RotateCcw size={14} strokeWidth={3} />
+            </button>
+          </div>
+        </div>
+
         {user && (
-          <div className="flex items-center gap-4 p-4 rounded-2xl bg-accent/30 border border-border/10 shadow-inner">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/10">
+          <div className="flex items-center gap-4 p-4 rounded-2xl bg-accent/30 border border-border/10">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
               <User size={20} strokeWidth={2.5} />
             </div>
             <div className="flex-1 min-w-0">

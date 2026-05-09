@@ -29,6 +29,7 @@ export function TaskForm({ onSuccess, initialDateString }: TaskFormProps) {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<TaskValues>({
     resolver: zodResolver(TaskSchema),
@@ -59,16 +60,69 @@ export function TaskForm({ onSuccess, initialDateString }: TaskFormProps) {
   const inputClasses = "w-full px-5 py-3 rounded-2xl border border-border/30 bg-background focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all placeholder:text-muted-foreground/50 font-medium";
   const labelClasses = "block text-sm font-bold text-muted-foreground mb-2 ml-1 uppercase tracking-wider";
 
+  const parseSmartInput = (input: string) => {
+    const values: any = {};
+    
+    // Parse tags (#work, #personal)
+    const tagMatch = input.match(/#(\w+)/);
+    if (tagMatch) {
+      values.category = tagMatch[1];
+      input = input.replace(tagMatch[0], '').trim();
+    }
+
+    // Parse priority (!urgent, !high, !low)
+    if (input.toLowerCase().includes('!urgent')) {
+      values.priority = 'Urgent';
+      input = input.replace(/!urgent/i, '').trim();
+    } else if (input.toLowerCase().includes('!high')) {
+      values.priority = 'High';
+      input = input.replace(/!high/i, '').trim();
+    } else if (input.toLowerCase().includes('!low')) {
+      values.priority = 'Low';
+      input = input.replace(/!low/i, '').trim();
+    }
+
+    // Simple date parsing (today, tomorrow)
+    const today = new Date();
+    if (input.toLowerCase().includes('today')) {
+      values.dueDate = today.toISOString().split('T')[0];
+      input = input.replace(/today/i, '').trim();
+    } else if (input.toLowerCase().includes('tomorrow')) {
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+      values.dueDate = tomorrow.toISOString().split('T')[0];
+      input = input.replace(/tomorrow/i, '').trim();
+    }
+
+    return { title: input, ...values };
+  };
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { title, category, priority, dueDate } = parseSmartInput(e.target.value);
+    if (category) setValue('category', category);
+    if (priority) setValue('priority', priority);
+    if (dueDate) setValue('dueDate', dueDate);
+  };
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div>
         <label className={labelClasses}>Task Title</label>
-        <input
-          {...register('title')}
-          className={cn(inputClasses, errors.title && "border-destructive focus:ring-destructive/10")}
-          placeholder="e.g., Finalize project proposal"
-          autoFocus
-        />
+        <div className="relative">
+          <input
+            {...register('title')}
+            onChange={(e) => {
+              register('title').onChange(e);
+              handleTitleChange(e);
+            }}
+            className={cn(inputClasses, errors.title && "border-destructive focus:ring-destructive/10")}
+            placeholder="e.g., Fix bugs tomorrow #work !high"
+            autoFocus
+          />
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-1">
+            <span className="text-[10px] font-black bg-accent px-1.5 py-0.5 rounded text-muted-foreground uppercase">NLP Active</span>
+          </div>
+        </div>
         {errors.title && (
           <p className="text-destructive text-xs font-bold mt-2 ml-1">{errors.title.message}</p>
         )}

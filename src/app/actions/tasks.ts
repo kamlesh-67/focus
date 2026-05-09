@@ -96,6 +96,11 @@ export async function toggleTask(id: string, completed: boolean): Promise<Action
       return { success: false, error: error.message };
     }
 
+    if (completed) {
+      const { updateCompletionStats } = await import('./stats');
+      await updateCompletionStats();
+    }
+
     revalidatePath('/');
     revalidatePath('/calendar');
     logAction('toggleTask', 'SUCCESS', startTime);

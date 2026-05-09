@@ -5,6 +5,8 @@ import { Sidebar } from './sidebar';
 import { BottomNav } from './bottom-nav';
 import { ReactNode, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { checkDeadlinesAndNotify } from '@/lib/utils/notifications';
+import { getTasks } from '@/app/actions/tasks';
 
 export function NavShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -21,12 +23,21 @@ export function NavShell({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [pathname]);
 
+  // Periodic deadline check
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const tasks = await getTasks();
+      checkDeadlinesAndNotify(tasks);
+    }, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, []);
+
   if (isAuthPage || isLandingPage || isDocsPage || isSupportPage) {
-    return <main className="flex-1 min-h-screen bg-background">{children}</main>;
+    return <main className="flex-1 min-h-screen bg-background mesh-gradient">{children}</main>;
   }
 
   return (
-    <div className="flex w-full relative">
+    <div className="flex w-full relative mesh-gradient min-h-screen">
       {/* Top Loading Bar */}
       <AnimatePresence>
         {isNavigating && (

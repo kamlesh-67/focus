@@ -1,15 +1,38 @@
 'use client';
 
 import { useTheme } from 'next-themes';
-import { Sun, Moon, Laptop, Globe, Info } from 'lucide-react';
+import { Sun, Moon, Laptop, Globe, Info, Bell, Shield, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    if ("Notification" in window) {
+      setNotificationsEnabled(Notification.permission === "granted");
+    }
+  }, []);
+
+  const requestNotificationPermission = async () => {
+    if (!("Notification" in window)) {
+      toast.error("This browser does not support desktop notifications.");
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission === "granted") {
+      setNotificationsEnabled(true);
+      new Notification("Focus", { body: "Notifications enabled! We'll keep you sharp." });
+      toast.success("Notifications enabled!");
+    } else {
+      toast.error("Permission denied");
+    }
+  };
 
   if (!mounted) return null;
 
@@ -21,8 +44,11 @@ export default function SettingsPage() {
       </header>
 
       <div className="space-y-6">
+        {/* Appearance */}
         <section className="bg-card border border-border/30 rounded-3xl p-8 shadow-sm">
-          <h2 className="text-xl font-bold mb-6">Appearance</h2>
+          <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+             <Zap className="text-primary" size={20} /> Appearance
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
               { id: 'light', icon: Sun, label: 'Light', color: 'text-yellow-500' },
@@ -51,12 +77,61 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* Notifications */}
+        <section className="bg-card border border-border/30 rounded-3xl p-8 shadow-sm">
+          <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+            <Bell className="text-primary" size={20} /> Notifications
+          </h2>
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-accent/30 border border-border/10">
+            <div className="space-y-1">
+              <p className="font-bold">Desktop Reminders</p>
+              <p className="text-sm text-muted-foreground font-medium">Get notified when tasks are due.</p>
+            </div>
+            <button
+              onClick={requestNotificationPermission}
+              disabled={notificationsEnabled}
+              className={cn(
+                "px-6 py-3 rounded-xl font-black text-sm uppercase tracking-widest transition-all",
+                notificationsEnabled 
+                  ? "bg-green-500/10 text-green-500 border border-green-500/20 cursor-default" 
+                  : "bg-primary text-white shadow-xl shadow-primary/20 hover:opacity-90 active:scale-95"
+              )}
+            >
+              {notificationsEnabled ? "Enabled" : "Enable"}
+            </button>
+          </div>
+        </section>
+
+        {/* Security */}
+        <section className="bg-card border border-border/30 rounded-3xl p-8 shadow-sm">
+          <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+            <Shield className="text-primary" size={20} /> Data & Security
+          </h2>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 rounded-2xl hover:bg-accent/30 transition-colors">
+              <div>
+                <p className="font-bold">Row Level Security</p>
+                <p className="text-sm text-muted-foreground font-medium">Your data is isolated and encrypted.</p>
+              </div>
+              <span className="px-3 py-1 bg-green-500/10 text-green-500 rounded-lg text-[10px] font-black uppercase tracking-widest">Active</span>
+            </div>
+            <div className="flex items-center justify-between p-4 rounded-2xl hover:bg-accent/30 transition-colors">
+              <div>
+                <p className="font-bold">Export Data</p>
+                <p className="text-sm text-muted-foreground font-medium">Download your workspace as JSON.</p>
+              </div>
+              <button onClick={() => toast.info("Exporting coming soon...")} className="px-4 py-2 border-2 border-border/60 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-accent transition-all">Export</button>
+            </div>
+          </div>
+        </section>
+
+        {/* About */}
         <section className="bg-card border border-border/30 rounded-3xl p-8 shadow-sm">
           <h2 className="text-xl font-bold mb-6">About</h2>
           <div className="space-y-2">
             {[
-              { icon: Info, label: 'Version', value: '1.0.0', href: null },
-              { icon: Globe, label: 'Source Code', value: 'GitHub', href: '#' },
+              { icon: Info, label: 'Version', value: '1.2.0', href: null },
+              { icon: Globe, label: 'Built for High-Performance', value: 'PRO', href: null },
             ].map((item, idx) => (
               <div 
                 key={idx}
@@ -73,7 +148,7 @@ export default function SettingsPage() {
                     {item.value}
                   </a>
                 ) : (
-                  <span className="text-muted-foreground font-mono bg-accent/50 px-3 py-1 rounded-lg text-sm">{item.value}</span>
+                  <span className="text-muted-foreground font-mono bg-accent/50 px-3 py-1 rounded-lg text-sm font-black">{item.value}</span>
                 )}
               </div>
             ))}
