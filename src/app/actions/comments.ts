@@ -1,30 +1,49 @@
 'use server';
 
+import sql from '../../lib/database';
 import { revalidatePath } from 'next/cache';
-import { createClient } from '../../lib/supabase/server';
 import { Comment } from '@prisma/client';
+import { createClient } from '../../lib/supabase/server';
 
-export async function addComment(taskId: string, content: string): Promise<Comment> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Unauthorized');
+const logAction = (name: string, status: 'START' | 'SUCCESS' | 'ERROR', startTime?: number, details?: any) => {
+  const timestamp = new Date().toISOString();
+  const duration = startTime ? ` (${Date.now() - startTime}ms)` : '';
+  console.log(`[${timestamp}] [ACTION: ${name}] [${status}]${duration}`, details || '');
+};
 
-  const { data: comment, error } = await supabase
-    .from('Comment')
-    .insert([{
-      taskId,
-      content
-    }])
-    .select()
-    .single();
+export async function addComment(taskId: string, content: string): Promise<Comment | null> {
+  const startTime = Date.now();
+  logAction('addComment', 'START', startTime, { taskId });
 
-  if (error) {
-    console.error('Error adding comment:', error);
-    throw new Error(error.message);
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      logAction('addComment', 'ERROR', startTime, 'Unauthorized');
+      return null;
+    }
+
+    const { data: comment, error } = await supabase
+      .from('Comment')
+      .insert([{
+        taskId,
+        content
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      logAction('addComment', 'ERROR', startTime, error);
+      return null;
+    }
+
+    revalidatePath('/');
+    logAction('addComment', 'SUCCESS', startTime);
+    return comment as Comment;
+  } catch (e: any) {
+    logAction('addComment', 'ERROR', startTime, e.message);
+    return null;
   }
-
-  revalidatePath('/');
-  return comment as Comment;
 }
 
 export async function getComments(taskId: string): Promise<Comment[]> {

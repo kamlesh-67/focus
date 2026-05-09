@@ -12,11 +12,23 @@ const ProjectSchema = z.object({
   targetDate: z.date().optional().nullable(),
 });
 
+const logAction = (name: string, status: 'START' | 'SUCCESS' | 'ERROR', startTime?: number, details?: any) => {
+  const timestamp = new Date().toISOString();
+  const duration = startTime ? ` (${Date.now() - startTime}ms)` : '';
+  console.log(`[${timestamp}] [ACTION: ${name}] [${status}]${duration}`, details || '');
+};
+
 export async function createProject(data: z.infer<typeof ProjectSchema>): Promise<ActionResult<any>> {
+  const startTime = Date.now();
+  logAction('createProject', 'START', startTime, { title: data.title });
+
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Unauthorized' };
+    if (!user) {
+      logAction('createProject', 'ERROR', startTime, 'Unauthorized');
+      return { success: false, error: 'Unauthorized' };
+    }
 
     const id = `proj_${Math.random().toString(36).substring(2, 11)}`;
 
@@ -31,11 +43,16 @@ export async function createProject(data: z.infer<typeof ProjectSchema>): Promis
       .select()
       .single();
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      logAction('createProject', 'ERROR', startTime, error);
+      return { success: false, error: error.message };
+    }
 
     revalidatePath('/goals');
+    logAction('createProject', 'SUCCESS', startTime);
     return { success: true, data: project };
   } catch (e: any) {
+    logAction('createProject', 'ERROR', startTime, e.message);
     return { success: false, error: e.message };
   }
 }
@@ -77,10 +94,16 @@ export async function getProjects(): Promise<(Project & { progress: number; task
 }
 
 export async function deleteProject(id: string): Promise<ActionResult<void>> {
+  const startTime = Date.now();
+  logAction('deleteProject', 'START', startTime, { id });
+
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Unauthorized' };
+    if (!user) {
+      logAction('deleteProject', 'ERROR', startTime, 'Unauthorized');
+      return { success: false, error: 'Unauthorized' };
+    }
 
     const { error } = await supabase
       .from('Project')
@@ -88,11 +111,16 @@ export async function deleteProject(id: string): Promise<ActionResult<void>> {
       .eq('id', id)
       .eq('userId', user.id);
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      logAction('deleteProject', 'ERROR', startTime, error);
+      return { success: false, error: error.message };
+    }
 
     revalidatePath('/goals');
+    logAction('deleteProject', 'SUCCESS', startTime);
     return { success: true };
   } catch (e: any) {
+    logAction('deleteProject', 'ERROR', startTime, e.message);
     return { success: false, error: e.message };
   }
 }

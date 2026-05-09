@@ -32,9 +32,13 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
     if (!newComment.trim()) return;
     startTransition(async () => {
       const comment = await addComment(task.id, newComment);
-      setComments([...comments, comment]);
-      setNewComment('');
-      toast.success('Comment added');
+      if (comment) {
+        setComments([...comments, comment]);
+        setNewComment('');
+        toast.success('Comment added');
+      } else {
+        toast.error('Failed to add comment');
+      }
     });
   };
 
@@ -129,9 +133,13 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
             <button
               onClick={handleAddComment}
               disabled={!newComment.trim() || isPending}
-              className="absolute right-2 top-2 p-2.5 bg-primary text-primary-foreground hover:opacity-90 rounded-xl transition-all disabled:opacity-50 active:scale-90 shadow-lg shadow-primary/20"
+              className="absolute right-2 top-2 p-2.5 bg-primary text-primary-foreground hover:opacity-90 rounded-xl transition-all disabled:opacity-50 active:scale-90 shadow-lg shadow-primary/20 flex items-center justify-center min-w-[44px] min-h-[44px]"
             >
-              <Send size={20} />
+              {isPending ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Send size={20} />
+              )}
             </button>
           </div>
         </div>

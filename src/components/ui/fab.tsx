@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TaskForm } from '@/components/tasks/task-form';
 import { ProjectForm } from '@/components/projects/project-form';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export function FAB() {
   const [isOpen, setIsOpen] = useState(false);
@@ -141,14 +142,22 @@ export function FAB() {
                     />
                     <button
                       onClick={async () => {
-                        const content = (document.getElementById('fab-note-content') as HTMLTextAreaElement).value;
+                        const textarea = document.getElementById('fab-note-content') as HTMLTextAreaElement;
+                        const content = textarea.value;
                         if (content.trim()) {
+                          textarea.disabled = true;
                           const { createNote } = await import('@/app/actions/notes');
-                          await createNote(content);
-                          setActiveForm(null);
+                          const result = await createNote(content);
+                          if (result.success) {
+                            toast.success('Note saved!');
+                            setActiveForm(null);
+                          } else {
+                            textarea.disabled = false;
+                            toast.error('Failed to save note', { description: result.error });
+                          }
                         }
                       }}
-                      className="w-full bg-primary text-primary-foreground font-bold py-5 rounded-2xl hover:opacity-90 transition-all shadow-xl shadow-primary/20 active:scale-[0.98]"
+                      className="w-full bg-primary text-primary-foreground font-bold py-5 rounded-2xl hover:opacity-90 transition-all shadow-xl shadow-primary/20 active:scale-[0.98] flex items-center justify-center min-h-[64px]"
                     >
                       Save Note
                     </button>

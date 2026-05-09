@@ -71,9 +71,13 @@ export function NoteGrid({ initialNotes }: { initialNotes: StickyNote[] }) {
           <button
             onClick={handleAddNote}
             disabled={!newNoteContent.trim() || isPending}
-            className="p-2 bg-primary text-primary-foreground rounded-full disabled:opacity-50 transition-opacity"
+            className="p-2 bg-primary text-primary-foreground rounded-full disabled:opacity-50 transition-all flex items-center justify-center min-w-[40px] min-h-[40px]"
           >
-            <Plus size={20} />
+            {isPending ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Plus size={20} />
+            )}
           </button>
         </div>
       </div>
